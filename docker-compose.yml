@@ -38,6 +38,8 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     networks:
       - microservices
+    volumes:
+      - shared-data:/app/videos/converter
 
   converter_worker:
     build:
@@ -50,9 +52,12 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     networks:
       - microservices
+    volumes:
+      - shared-data:/app/videos/converter
 
 networks:
   microservices:
 
 volumes:
   pgdata:
+  shared-data:

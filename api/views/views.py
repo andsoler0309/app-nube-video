@@ -1,12 +1,12 @@
 import hashlib
 import os
-import requests
 from flask_restful import Resource
-from flask import request, abort
+from flask import request, abort, current_app
 from models import db, User, UserSchema, VideoConversionTask, VideoConversionTaskSchema, TaskStatus
 from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
 from extensions import celery
 from celery.result import AsyncResult
+from werkzeug.utils import secure_filename
 
 CONVERTER_SERVICE_URL = os.environ.get('CONVERTER_SERVICE_URL', 'http://localhost:5001')
 
@@ -69,13 +69,40 @@ class ViewLogin(Resource):
         }, 200
 
 
+class ViewFile(Resource):
+    def post(self):
+        if 'file' not in request.files:
+            return {'error': 'No file part'}, 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return {'error': 'No selected file'}, 400
+        if file:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            return {'message': 'File uploaded successfully', 'path': filepath}, 200
+
+
 class ViewConverter(Resource):
     @jwt_required()
     def post(self):
-        data = request.json
-        input_path = data['input_path']
-        output_path = data['output_path']
-        conversion_type = data['conversion_type']
+        if 'file' not in request.files:
+            return {'error': 'No file part'}, 400
+
+        file = request.files['file']
+        if file.filename == '' or not file:
+            return {'error': 'No selected file'}, 400
+
+        filename = secure_filename(file.filename)
+        file_basename, file_extension = os.path.splitext(filename)
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        conversion_type = request.form.get('conversion_type')
+        output_filename = f"converted_{file_basename}.{conversion_type}"
+        input_path = filepath
+        output_path = os.path.join(current_app.config['UPLOAD_FOLDER'], output_filename)
 
         try:
             converter_response = initiate_conversion_with_service(input_path, output_path, conversion_type)
