@@ -1,7 +1,7 @@
 import hashlib
 import os
 from flask_restful import Resource
-from flask import request, abort, current_app
+from flask import request, abort, current_app, send_from_directory
 from models import db, User, UserSchema, VideoConversionTask, VideoConversionTaskSchema, TaskStatus
 from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
 from extensions import celery
@@ -100,9 +100,8 @@ class ViewConverter(Resource):
         file.save(filepath)
 
         conversion_type = request.form.get('conversion_type')
-        output_filename = f"converted_{file_basename}.{conversion_type}"
         input_path = filepath
-        output_path = os.path.join(current_app.config['UPLOAD_FOLDER'], output_filename)
+        output_path = os.path.join(current_app.config['CONVERTED_FOLDER'], f"converted_{file_basename}")
 
         try:
             converter_response = initiate_conversion_with_service(input_path, output_path, conversion_type)
@@ -153,3 +152,16 @@ class ViewConverterStatus(Resource):
         db.session.commit()
 
         return response
+
+
+class ViewFileDownload(Resource):
+    def get(self):
+        filename = request.args.get('filename')
+        if not filename:
+            return {'error': 'filename is required'}, 400
+
+        try:
+            # Ensure this path is secure and users can't traverse to other directories
+            return send_from_directory(current_app.config['CONVERTED_FOLDER'], filename, as_attachment=True)
+        except FileNotFoundError:
+            return {'error': 'file not found'}, 404

@@ -39,7 +39,7 @@ services:
     networks:
       - microservices
     volumes:
-      - shared-data:/app/videos/converter
+      - shared-data:/app/videos
 
   converter_worker:
     build:
@@ -53,7 +53,7 @@ services:
     networks:
       - microservices
     volumes:
-      - shared-data:/app/videos/converter
+      - shared-data:/app/videos
 
 networks:
   microservices:

@@ -28,14 +28,14 @@ class TaskStatus(enum.Enum):
 
 class VideoConversionTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.String(255), unique=True, nullable=False)  # The ID returned by Celery
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Assuming you want to track which user initiated the task
+    task_id = db.Column(db.String(255), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     input_path = db.Column(db.String(255), nullable=False)
     output_path = db.Column(db.String(255), nullable=False)
     conversion_type = db.Column(db.String(255), nullable=False)
     status = db.Column(db.Enum(TaskStatus), default=TaskStatus.PENDING)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    error_message = db.Column(db.Text)  # If the task fails, store the error message here
+    error_message = db.Column(db.Text)
 
 class VideoConversionTaskSchema(SQLAlchemyAutoSchema):
     class Meta:

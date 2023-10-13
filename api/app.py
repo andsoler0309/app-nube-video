@@ -18,7 +18,8 @@ app.config["PROPAGATE_EXCEPTIONS"] = True
 app.config["JWT_SECRET_KEY"] = "frase-secreta"
 app.config['CELERY_BROKER_URL'] = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 app.config['CELERY_RESULT_BACKEND'] = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-app.config['UPLOAD_FOLDER'] = '/app/videos/converter'
+app.config['UPLOAD_FOLDER'] = '/app/videos/uploaded'
+app.config['CONVERTED_FOLDER'] = '/app/videos/converted'
 
 # Initialize Celery
 celery.conf.update(app.config)
@@ -39,5 +40,6 @@ api.add_resource(ViewSignInUser, "/signin")
 api.add_resource(ViewLogin, "/login")
 api.add_resource(ViewConverter, "/convert")
 api.add_resource(ViewConverterStatus, "/convert_status/<string:task_id>")
+api.add_resource(ViewFileDownload, "/download")
 
 jwt = JWTManager(app)
