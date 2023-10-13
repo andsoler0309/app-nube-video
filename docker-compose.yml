@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    networks:
+      - microservices
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: nube
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - microservices
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - redis
+      - converter_worker
+      - postgres
+    environment:
+      - CONVERTER_SERVICE_URL=http://converter_api:5001
+      - DATABASE_URL=postgresql://postgres:1234@postgres:5432/nube
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    networks:
+      - microservices
+
+  converter_worker:
+    build:
+      context: ./converter_worker
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    networks:
+      - microservices
+
+networks:
+  microservices:
+
+volumes:
+  pgdata:
