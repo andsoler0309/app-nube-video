@@ -8,7 +8,7 @@ from extensions import celery
 from celery.result import AsyncResult
 from werkzeug.utils import secure_filename
 
-CONVERTER_SERVICE_URL = os.environ.get('CONVERTER_SERVICE_URL', 'http://localhost:5001')
+task_schema = VideoConversionTaskSchema(many=True)
 
 
 def initiate_conversion_with_service(input_path, output_path, conversion_type):
@@ -69,21 +69,6 @@ class ViewLogin(Resource):
         }, 200
 
 
-class ViewFile(Resource):
-    def post(self):
-        if 'file' not in request.files:
-            return {'error': 'No file part'}, 400
-
-        file = request.files['file']
-        if file.filename == '':
-            return {'error': 'No selected file'}, 400
-        if file:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            return {'message': 'File uploaded successfully', 'path': filepath}, 200
-
-
 class ViewConverter(Resource):
     @jwt_required()
     def post(self):
@@ -125,8 +110,28 @@ class ViewConverter(Resource):
         except Exception as e:
             return {"error": str(e)}, 500
 
+    @jwt_required()
+    def get(self):
+        order = request.args.get('order')
+        max_results = request.args.get('max')
+        user_id = get_jwt_identity()
+
+        tasks_query = VideoConversionTask.query.filter_by(user_id=user_id)
+
+        if order == '1':
+            tasks_query = tasks_query.order_by(VideoConversionTask.id.desc())
+        else:
+            tasks_query = tasks_query.order_by(VideoConversionTask.id.asc())
+
+        if max_results:
+            tasks_query = tasks_query.limit(int(max_results))
+
+        tasks = tasks_query.all()
+        return {"tasks": task_schema.dump(tasks)}, 200
+
 
 class ViewConverterStatus(Resource):
+    @jwt_required()
     def get(self, task_id):
         task = AsyncResult(task_id, app=celery)
         response = {
@@ -150,18 +155,54 @@ class ViewConverterStatus(Resource):
             task_entry.error_message = response['error_message']
 
         db.session.commit()
-
         return response
+
+    @jwt_required()
+    def delete(self, task_id):
+        try:
+            task = VideoConversionTask.query.filter_by(task_id=task_id).first()
+            if not task:
+                return {"error": "Task not found"}, 404
+
+            if task.user_id != get_jwt_identity():
+                return {"error": "Not authorized to delete this task"}, 403
+
+            # Delete the task from the database
+            db.session.delete(task)
+            db.session.commit()
+
+            return {}, 204
+
+        except Exception as e:
+            return {"error": str(e)}, 500
 
 
 class ViewFileDownload(Resource):
+    @jwt_required()
     def get(self):
-        filename = request.args.get('filename')
-        if not filename:
-            return {'error': 'filename is required'}, 400
+        task_id = request.args.get('task_id')
+        if not task_id:
+            return {'error': 'Task id is required'}, 400
 
+        task = VideoConversionTask.query.filter_by(task_id=task_id).first()
+        print(task.__dict__)
+
+        filepath = task.output_path
+        directory, filename = os.path.split(filepath)
+        print(directory, filename)
         try:
-            # Ensure this path is secure and users can't traverse to other directories
-            return send_from_directory(current_app.config['CONVERTED_FOLDER'], filename, as_attachment=True)
+            task = VideoConversionTask.query.filter_by(task_id=task_id).first()
+            if not task:
+                return {"error": "Task not found"}, 404
+
+            if task.user_id != get_jwt_identity():
+                return {"error": "Not authorized to download this file"}, 403
+
+            if task.status != TaskStatus.SUCCESS:
+                return {"error": "File is not ready for download"}, 400
+
+            filepath = task.output_path + '.' + task.conversion_type
+            directory, filename = os.path.split(filepath)
+            return send_from_directory(directory, filename, as_attachment=True)
         except FileNotFoundError:
             return {'error': 'file not found'}, 404

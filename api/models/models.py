@@ -20,11 +20,13 @@ class UserSchema(SQLAlchemyAutoSchema):
         include_relationships = True
         load_instance = True
 
+
 class TaskStatus(enum.Enum):
     PENDING = "PENDING"
     STARTED = "STARTED"
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
+
 
 class VideoConversionTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,8 +39,15 @@ class VideoConversionTask(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     error_message = db.Column(db.Text)
 
+
 class VideoConversionTaskSchema(SQLAlchemyAutoSchema):
+    status = fields.Method("get_status_as_string")
+
     class Meta:
         model = VideoConversionTask
         include_relationships = True
         load_instance = True
+        fields = ("task_id", "conversion_type", "status")
+
+    def get_status_as_string(self, obj):
+        return obj.status.value

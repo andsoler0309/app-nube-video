@@ -36,10 +36,10 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 api = Api(app)
 
-api.add_resource(ViewSignInUser, "/signin")
-api.add_resource(ViewLogin, "/login")
-api.add_resource(ViewConverter, "/convert")
-api.add_resource(ViewConverterStatus, "/convert_status/<string:task_id>")
-api.add_resource(ViewFileDownload, "/download")
+api.add_resource(ViewSignInUser, "/api/auth/signup")
+api.add_resource(ViewLogin, "/api/auth/login")
+api.add_resource(ViewConverter, "/api/tasks")
+api.add_resource(ViewConverterStatus, "/api/tasks/<string:task_id>")
+api.add_resource(ViewFileDownload, "/api/download")
 
 jwt = JWTManager(app)
