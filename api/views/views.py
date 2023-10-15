@@ -10,11 +10,13 @@ from werkzeug.utils import secure_filename
 
 task_schema = VideoConversionTaskSchema(many=True)
 
+def ensure_directories_exists(directories):
+    for directory in directories:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
 def initiate_conversion_with_service(input_path, output_path, conversion_type):
     task = celery.send_task('tasks.convert_video', args=[input_path, output_path, conversion_type])
-    print(task)
-
     return {
         'status': 'Conversion started',
         'task_id': str(task.id)
@@ -81,19 +83,21 @@ class ViewConverter(Resource):
 
         filename = secure_filename(file.filename)
         file_basename, file_extension = os.path.splitext(filename)
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+
+        user_upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(get_jwt_identity()))
+        user_output_path = os.path.join(current_app.config['CONVERTED_FOLDER'], str(get_jwt_identity()))
+        ensure_directories_exists([user_upload_path, user_output_path])
+
+        filepath = os.path.join(user_upload_path, filename)
         file.save(filepath)
 
         conversion_type = request.form.get('conversion_type')
         input_path = filepath
-        output_path = os.path.join(current_app.config['CONVERTED_FOLDER'], f"converted_{file_basename}")
-
+        output_path = os.path.join(user_output_path, f"converted_{file_basename}")
         try:
             converter_response = initiate_conversion_with_service(input_path, output_path, conversion_type)
             task_id = converter_response['task_id']
-            print(task_id)
 
-            # Create an entry in the VideoConversionTask table
             task_entry = VideoConversionTask(
                 task_id=task_id,
                 user_id=get_jwt_identity(),
@@ -138,19 +142,16 @@ class ViewConverterStatus(Resource):
             'state': task.state
         }
 
-        # Handle custom task result based on state
         if task.state == 'SUCCESS':
-            response['result'] = str(task.result)  # Convert result to string if not serializable
+            response['result'] = str(task.result)
         elif task.state == 'FAILURE':
-            response['error_message'] = str(task.result)  # Convert Exception to string
+            response['error_message'] = str(task.result)
 
-        # Update database record
         task_entry = VideoConversionTask.query.filter_by(task_id=task_id).first()
         if not task_entry:
-            abort(404, description="Task not found")  # Return a 404 error if task is not found
+            abort(404, description="Task not found")
 
-        task_entry.status = task.state  # Or map this to your own statuses if required
-
+        task_entry.status = task.state
         if 'error_message' in response:
             task_entry.error_message = response['error_message']
 
@@ -167,10 +168,8 @@ class ViewConverterStatus(Resource):
             if task.user_id != get_jwt_identity():
                 return {"error": "Not authorized to delete this task"}, 403
 
-            # Delete the task from the database
             db.session.delete(task)
             db.session.commit()
-
             return {}, 204
 
         except Exception as e:
@@ -184,12 +183,6 @@ class ViewFileDownload(Resource):
         if not task_id:
             return {'error': 'Task id is required'}, 400
 
-        task = VideoConversionTask.query.filter_by(task_id=task_id).first()
-        print(task.__dict__)
-
-        filepath = task.output_path
-        directory, filename = os.path.split(filepath)
-        print(directory, filename)
         try:
             task = VideoConversionTask.query.filter_by(task_id=task_id).first()
             if not task:

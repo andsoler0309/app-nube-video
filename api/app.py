@@ -4,12 +4,8 @@ from flask_cors import CORS
 from flask_restful import Api
 from views import *
 from models import db
-from dotenv import load_dotenv
 from flask_jwt_extended import JWTManager
 from extensions import celery
-
-# load_dotenv()
-
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:1234@localhost:5432/nube1")
@@ -21,10 +17,8 @@ app.config['CELERY_RESULT_BACKEND'] = os.environ.get('CELERY_RESULT_BACKEND', 'r
 app.config['UPLOAD_FOLDER'] = '/app/videos/uploaded'
 app.config['CONVERTED_FOLDER'] = '/app/videos/converted'
 
-# Initialize Celery
 celery.conf.update(app.config)
 celery.main = app.name
-
 
 app_context = app.app_context()
 app_context.push()
