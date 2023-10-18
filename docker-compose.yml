@@ -48,6 +48,7 @@ services:
     depends_on:
       - redis
     environment:
+      - DATABASE_URL=postgresql://postgres:1234@postgres:5432/nube
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     networks:

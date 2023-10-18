@@ -8,7 +8,8 @@ from extensions import celery
 from celery.result import AsyncResult
 from werkzeug.utils import secure_filename
 
-task_schema = VideoConversionTaskSchema(many=True)
+tasks_schema = VideoConversionTaskSchema(many=True)
+task_schema = VideoConversionTaskSchema()
 
 def ensure_directories_exists(directories):
     for directory in directories:
@@ -131,32 +132,20 @@ class ViewConverter(Resource):
             tasks_query = tasks_query.limit(int(max_results))
 
         tasks = tasks_query.all()
-        return {"tasks": task_schema.dump(tasks)}, 200
+        return {"tasks": tasks_schema.dump(tasks)}, 200
 
 
 class ViewConverterStatus(Resource):
     @jwt_required()
     def get(self, task_id):
-        task = AsyncResult(task_id, app=celery)
-        response = {
-            'state': task.state
-        }
+        task = VideoConversionTask.query.filter_by(task_id=task_id).first()
+        if not task:
+            return {"error": "Task not found"}, 404
 
-        if task.state == 'SUCCESS':
-            response['result'] = str(task.result)
-        elif task.state == 'FAILURE':
-            response['error_message'] = str(task.result)
+        if task.user_id != get_jwt_identity():
+            return {"error": "Not authorized to view this task"}, 403
 
-        task_entry = VideoConversionTask.query.filter_by(task_id=task_id).first()
-        if not task_entry:
-            abort(404, description="Task not found")
-
-        task_entry.status = task.state
-        if 'error_message' in response:
-            task_entry.error_message = response['error_message']
-
-        db.session.commit()
-        return response
+        return {"task": task_schema.dump(task)}, 200
 
     @jwt_required()
     def delete(self, task_id):
