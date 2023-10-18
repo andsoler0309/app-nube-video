@@ -7,15 +7,16 @@ import db
 
 
 @celery_app.task(bind=True)
-def convert_video(self, input_path, output_path, conversion_type):
+def convert_video(self, input_path, output_path, conversion_type, task_id):
     self.update_state(state=states.STARTED, meta={'status': 'Converting...'})
     cmd = get_conversion_command(input_path, output_path, conversion_type)
 
     with db.session() as session:
         task = session.query(db.VideoConversionTask).filter(
-            db.VideoConversionTask.task_id == self.request.id
+            db.VideoConversionTask.id == task_id
         ).first()
         task.status = db.TaskStatus.STARTED
+        task.broker_task_id = self.request.id
         session.commit()
 
         if cmd:

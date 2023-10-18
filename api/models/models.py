@@ -1,4 +1,6 @@
 import enum
+import uuid
+from sqlalchemy.dialects.postgresql import UUID
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import fields
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
@@ -29,8 +31,8 @@ class TaskStatus(enum.Enum):
 
 
 class VideoConversionTask(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    task_id = db.Column(db.String(255), unique=True, nullable=False)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+    broker_task_id = db.Column(db.String(255), unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     input_path = db.Column(db.String(255), nullable=False)
     output_path = db.Column(db.String(255), nullable=False)
@@ -42,12 +44,16 @@ class VideoConversionTask(db.Model):
 
 class VideoConversionTaskSchema(SQLAlchemyAutoSchema):
     status = fields.Method("get_status_as_string")
+    id = fields.Method("uuid_to_str")
 
     class Meta:
         model = VideoConversionTask
         include_relationships = True
         load_instance = True
-        fields = ("task_id", "conversion_type", "status")
+        fields = ("id", "conversion_type", "status")
 
     def get_status_as_string(self, obj):
         return obj.status.value
+
+    def uuid_to_str(self, obj):
+        return str(obj.id)

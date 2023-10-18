@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api
@@ -6,6 +7,7 @@ from views import *
 from models import db
 from flask_jwt_extended import JWTManager
 from extensions import celery
+from sqlalchemy.exc import OperationalError
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:1234@localhost:5432/nube1")
@@ -23,8 +25,20 @@ celery.main = app.name
 app_context = app.app_context()
 app_context.push()
 
-db.init_app(app)
-db.create_all()
+max_retires = 5
+retry_interval = 2
+for retry in range(max_retires):
+    try:
+        db.init_app(app)
+        db.create_all()
+        break
+    except OperationalError as e:
+        if retry < max_retires - 1:  # i.e. if it's not the last retry
+            print(f"Database connection failed. Retrying in {retry_interval} seconds...")
+            time.sleep(retry_interval)
+            continue
+        else:
+            raise e
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 

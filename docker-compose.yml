@@ -36,6 +36,7 @@ services:
       - DATABASE_URL=postgresql://postgres:1234@postgres:5432/nube
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: ["flask", "run", "--host=0.0.0.0", "--port=5000"]
     networks:
       - microservices
     volumes:
@@ -47,10 +48,12 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - redis
+      - postgres
     environment:
       - DATABASE_URL=postgresql://postgres:1234@postgres:5432/nube
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: ["celery", "-A", "tasks", "worker", "--loglevel=info"]
     networks:
       - microservices
     volumes:
