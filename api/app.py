@@ -25,15 +25,17 @@ celery.main = app.name
 app_context = app.app_context()
 app_context.push()
 
+db.init_app(app)
+
 max_retires = 5
-retry_interval = 2
+retry_interval = 1
 for retry in range(max_retires):
     try:
-        db.init_app(app)
-        db.create_all()
+        with app.app_context():
+            db.create_all()
         break
     except OperationalError as e:
-        if retry < max_retires - 1:  # i.e. if it's not the last retry
+        if retry < max_retires - 1:
             print(f"Database connection failed. Retrying in {retry_interval} seconds...")
             time.sleep(retry_interval)
             continue

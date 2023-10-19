@@ -1,5 +1,7 @@
 # Repository Overview
 
+POSTMAN documentation: https://documenter.getpostman.com/view/30633619/2s9YRB1WyD
+
 ### The repository consists of two main components:
 
 1. __API__: This is the main application that exposes endpoints for the users. It's built using Python and Flask.
