@@ -1,0 +1,356 @@
+{
+	"info": {
+		"_postman_id": "6060690e-064f-4824-bca4-01227d8299ec",
+		"name": "MISW-4204-2023-15-video-converter",
+		"description": "Este proyecto ofrece una solución para la conversión de archivos de video. Permite a los usuarios registrarse, subir videos en formatos específicos, iniciar tareas de conversión a distintos formatos, revisar el progreso de estas tareas y, finalmente, descargar el video convertido.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30633619"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "signup",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password1\": \"1234\",\n    \"password2\": \"1234\",\n    \"username\": \"test\",\n    \"email\": \"test@test.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/auth/signup",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Permite crear una cuenta de usuario con los campos: `username`, `email` y `password`. El usuario y el correo electrónico deben ser únicos en la plataforma. La contraseña debe seguir lineamientos mínimos de seguridad y debe ser solicitada dos veces para confirmar su correcta introducción.\n\n### Parámetros del Endpoint\n\n- `username` (String): Nombre de usuario.\n- `password1` (String): Primera introducción de la contraseña.\n- `password2` (String): Confirmación de la contraseña.\n- `email` (String): Correo electrónico del usuario.\n    \n\n**Response**:\n\n``` json\n{\n    \"message\": \"usuario creado exitosamente\",\n    \"id\": \"user_id\"\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"test\",\n    \"password\": \"1234\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Permite recuperar el token de autorización para consumir los recursos del API proporcionando un nombre de usuario y una contraseña válidos de una cuenta registrada\n\n### Parámetros del Endpoint\n\n- `username` (String): Nombre de usuario.\n- `password` (String): Contraseña asociada al nombre de usuario.\n    \n\n**Response**\n\n``` json\n{\n    \"message\": \"Inicio de sesión exitoso\",\n    \"token\": \"JWT token\",\n    \"id\": \"user_id\"\n}\n```"
+					},
+					"response": []
+				}
+			],
+			"description": "Se encuentran los endpoints para registrar y autenticar usuarios.",
+			"auth": {
+				"type": "noauth"
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Tasks",
+			"item": [
+				{
+					"name": "create task",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "IMG_4522.MOV"
+								},
+								{
+									"key": "conversion_type",
+									"value": "mp4",
+									"type": "default"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/tasks",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"tasks"
+							]
+						},
+						"description": "Permite crear una nueva tarea de conversión de formatos. El usuario necesita estar autorizado para realizar esta acción\n\n### Parámetros del Endpoint\n\n- `fileName` (File): Ruta del archivo que se subirá a la aplicación.\n- `newFormat` (String): Especifica el formato al que se desea convertir el archivo subido.\n    \n\nLos siguientes campos se generan automáticamente en la aplicación:\n\n- `id`: Un identificador único para la tarea.\n- `timeStamp`: Fecha y hora en que se cargó el archivo.\n- `status`: Indica si el archivo ha sido procesado o no. Por defecto, cuando se sube un archivo, su estado es \"uploaded\". Una vez que el archivo es procesado, cambia a \"processed\".\n    \n\n**Response**\n\n``` json\n{\n \"message\": \"Conversion started\",\n \"task_id\": \"task_id\"\n}\n\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "get task status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/tasks/2",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"tasks",
+								"2"
+							]
+						},
+						"description": "Permite recuperar la información detallada de una tarea específica en la aplicación. Para acceder a esta información, el usuario debe estar autorizado\n\nse requiere el parametro de task_id en la url\n\n**Response**\n\n``` json\n{\n     \"state\": \"SUCCESS\",\n     \"result\": \"{'status': 'File saved to path/to/file'}\"\n}\n\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "get all tasks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/tasks",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"tasks"
+							]
+						},
+						"description": "Permite recuperar todas las tareas de conversión de un usuario autorizado en la aplicación\n\n### Parámetros de Consulta\n\n- `max` (int): Parámetro opcional que limita la cantidad de resultados devueltos por la consulta.\n- `order` (int): Especifica el orden de los resultados. Si es `0`, se ordenan de forma ascendente; si es `1`, de forma descendente, basado en el ID de la tarea.\n    \n\n**Response**\n\n``` json\n {\n     \"tasks\": [\n         {\n             \"task_id\": \"28ac20f9-4375-461c-90f9-be20ca41ee49\",\n             \"conversion_type\": \"mp4\",\n             \"status\": \"SUCCESS\"\n         },\n         {\n             \"task_id\": \"aabbef7d-c477-49a9-882e-5458cdaae1bb\",\n             \"conversion_type\": \"mp4\",\n             \"status\": \"SUCCESS\"\n         }\n     ]\n }\n\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "delete task",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/tasks/1",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"tasks",
+								"1"
+							]
+						},
+						"description": "Permite eliminar una tarea específica en la aplicación. El usuario debe estar autorizado para realizar esta acción.\n\n**Response**\n\n204"
+					},
+					"response": []
+				}
+			],
+			"description": "Contiene los endpoints relacionados con crear, consultar, listar y borrar una tarea de conversion.",
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Download",
+			"item": [
+				{
+					"name": "get file converted",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/download?task_id=2",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"download"
+							],
+							"query": [
+								{
+									"key": "task_id",
+									"value": "2"
+								}
+							]
+						},
+						"description": "download the file converted  \n  \n**Request**\n\nrequires `task_id` param with the id of the task to download the converted file"
+					},
+					"response": []
+				}
+			],
+			"description": "Contiene los endpoints para descargar el archivo convertido",
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
